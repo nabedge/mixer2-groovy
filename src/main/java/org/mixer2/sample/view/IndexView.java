@@ -14,7 +14,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.codehaus.groovy.control.CompilerConfiguration;
 import org.mixer2.jaxb.xhtml.Div;
 import org.mixer2.jaxb.xhtml.Html;
 import org.mixer2.spring.webmvc.AbstractMixer2XhtmlView;
@@ -36,8 +35,6 @@ public class IndexView extends AbstractMixer2XhtmlView {
     
     @PostConstruct
     private void init() throws IOException {
-        CompilerConfiguration grvCfg = new CompilerConfiguration();
-        grvCfg.setSourceEncoding("UTF-8");
         GroovyShell groovyShell = new GroovyShell(ClassUtils.getDefaultClassLoader());
         File file = resourceLoader.getResource(groovyScriptFilePath).getFile();
         this.groovyScript = groovyShell.parse(file);
