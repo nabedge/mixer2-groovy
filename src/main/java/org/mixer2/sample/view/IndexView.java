@@ -2,11 +2,13 @@ package org.mixer2.sample.view;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
-import groovy.lang.Script;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -28,8 +30,23 @@ public class IndexView extends AbstractMixer2XhtmlView {
     @Autowired
     protected ResourceLoader resourceLoader;
 
-    private final String templateDirPrefix = "classpath:m2mockup/m2template/";
-    private final String grvScriptFile = "index.groovy";
+    private final String groovyScriptFilePath = "classpath:m2mockup/m2template/index.groovy";
+    
+    private groovy.lang.Script groovyScript;
+    
+    @PostConstruct
+    private void init() throws IOException {
+        CompilerConfiguration grvCfg = new CompilerConfiguration();
+        grvCfg.setSourceEncoding("UTF-8");
+        GroovyShell groovyShell = new GroovyShell(ClassUtils.getDefaultClassLoader());
+        File file = resourceLoader.getResource(groovyScriptFilePath).getFile();
+        this.groovyScript = groovyShell.parse(file);
+    }
+    
+    private synchronized void runScript(Binding binding) {
+        this.groovyScript.setBinding(binding);
+        this.groovyScript.run();
+    }
 
     @Override
     protected Html renderHtml(Html html, Map<String, Object> model,
@@ -40,25 +57,11 @@ public class IndexView extends AbstractMixer2XhtmlView {
 
         boolean useGroovy = (boolean) model.get("useGroovy");
         if (useGroovy) {
-
-            // prepare groovy environment
-            CompilerConfiguration grvCfg = new CompilerConfiguration();
-            grvCfg.setSourceEncoding("UTF-8");
-            //grvCfg.getOptimizationOptions().put("indy", true);
-            //grvCfg.getOptimizationOptions().put("int", false);
-
             // prepare binding data for groovy script
-            Binding grvBinding = new Binding();
-            grvBinding.setVariable("html", html);
-            grvBinding.setVariable("model", model);
-
-            // run groovy
-            GroovyShell grvShell = new GroovyShell(
-                    ClassUtils.getDefaultClassLoader(), grvBinding, grvCfg);
-            Script grvScript = grvShell.parse(resourceLoader.getResource(
-                    templateDirPrefix + grvScriptFile).getFile());
-            grvScript.run();
-
+            Binding binding = new Binding();
+            binding.setVariable("html", html);
+            binding.setVariable("model", model);
+            runScript(binding);
         } else {
             // normal java & mixer2 usage.
             String helloMessage = (String) model.get("helloMessage");
